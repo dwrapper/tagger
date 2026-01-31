@@ -15,6 +15,7 @@
 #include <QSignalBlocker>
 #include <QTimer>
 #include <QShortcut>
+#include <cmath>
 
 static QString fmtTime(double seconds) {
     if (seconds <= 0 || std::isnan(seconds) || std::isinf(seconds)) return "00:00";
