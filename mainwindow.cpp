@@ -52,6 +52,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     }
 
     m_hasher = new FileHasher(m_store, this);
+    if (m_thumbModel) {
+        m_thumbModel->setStore(m_store);
+    }
 
     QVector<Workspace> workspaces;
     if (m_store) {
