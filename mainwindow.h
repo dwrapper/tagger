@@ -24,6 +24,7 @@ public:
 private:
     void buildUi();
     void setWorkspaceDirectory(const QString& dir);
+    void addWorkspaceAndSelect(const QString& dir);
 
     QWidget* buildMainTab();
 
