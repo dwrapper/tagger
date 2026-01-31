@@ -17,6 +17,9 @@ class VideoDetailsTab : public QWidget {
 public:
     VideoDetailsTab(const FileItem& item, TaggerStore* store, FileHasher* hasher, QWidget* parent=nullptr);
 
+signals:
+    void navigateRequested(int direction);
+
 private:
     QWidget* buildInfoPane(const FileItem& item);
     void setModePlayer(bool playerMode);

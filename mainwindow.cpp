@@ -297,6 +297,16 @@ bool MainWindow::openFileTab(const FileItem& item, bool setCurrent, bool persist
         }
     }
 
+    QWidget* tab = createDetailsTab(item);
+
+    tab->setProperty("filePath", item.absolutePath);
+    const int idx = m_tabs->addTab(tab, item.fileName);
+    if (setCurrent) m_tabs->setCurrentIndex(idx);
+    if (persist && m_store) m_store->addOpenTab(item.absolutePath);
+    return true;
+}
+
+QWidget* MainWindow::createDetailsTab(const FileItem& item) {
     QWidget* tab = nullptr;
     switch (item.kind) {
     case FileKind::Picture:
@@ -312,10 +322,42 @@ bool MainWindow::openFileTab(const FileItem& item, bool setCurrent, bool persist
         break;
     }
 
-    tab->setProperty("filePath", item.absolutePath);
-    const int idx = m_tabs->addTab(tab, item.fileName);
-    if (setCurrent) m_tabs->setCurrentIndex(idx);
-    if (persist && m_store) m_store->addOpenTab(item.absolutePath);
+    if (auto* fileTab = qobject_cast<FileDetailsTab*>(tab)) {
+        connect(fileTab, &FileDetailsTab::navigateRequested, this,
+                [this, tab](int direction) { navigateDetailsTab(tab, direction); });
+    } else if (auto* picTab = qobject_cast<PictureDetailsTab*>(tab)) {
+        connect(picTab, &PictureDetailsTab::navigateRequested, this,
+                [this, tab](int direction) { navigateDetailsTab(tab, direction); });
+    } else if (auto* vidTab = qobject_cast<VideoDetailsTab*>(tab)) {
+        connect(vidTab, &VideoDetailsTab::navigateRequested, this,
+                [this, tab](int direction) { navigateDetailsTab(tab, direction); });
+    }
+
+    return tab;
+}
+
+bool MainWindow::navigateDetailsTab(QWidget* tab, int direction) {
+    if (!tab || !m_tabs || !m_thumbModel) return false;
+    const QString currentPath = tab->property("filePath").toString();
+    const FileItem* nextItem = m_thumbModel->neighborFile(currentPath, direction);
+    if (!nextItem) return false;
+
+    const int tabIndex = m_tabs->indexOf(tab);
+    if (tabIndex < 0) return false;
+
+    QWidget* newTab = createDetailsTab(*nextItem);
+    newTab->setProperty("filePath", nextItem->absolutePath);
+
+    m_tabs->removeTab(tabIndex);
+    tab->deleteLater();
+    m_tabs->insertTab(tabIndex, newTab, nextItem->fileName);
+    m_tabs->setCurrentIndex(tabIndex);
+
+    if (m_store) {
+        m_store->removeOpenTab(currentPath);
+        m_store->addOpenTab(nextItem->absolutePath);
+    }
+
     return true;
 }
 

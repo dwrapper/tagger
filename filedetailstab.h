@@ -13,6 +13,9 @@ class FileDetailsTab : public QWidget {
 public:    
     FileDetailsTab(const FileItem& item, TaggerStore* store, FileHasher* hasher, QWidget* parent=nullptr);
 
+signals:
+    void navigateRequested(int direction);
+
     TaggerStore* m_store = nullptr;
     FileHasher* m_hasher = nullptr;
     FileItem m_item;
