@@ -46,11 +46,23 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     m_hasher = new FileHasher(m_store, this);
 
-
-    // Example workspaces (replace with real config)
-    m_workspaceModel->setWorkspaces({        
-        {"Home", QDir::homePath()},
-    });
+    QVector<Workspace> workspaces;
+    if (m_store) {
+        const auto stored = m_store->loadWorkspaces();
+        for (const auto& rec : stored) {
+            workspaces.push_back({rec.name, rec.dir});
+        }
+    }
+    if (workspaces.isEmpty()) {
+        const QString homeDir = QDir::homePath();
+        if (!homeDir.isEmpty()) {
+            const QFileInfo fi(homeDir);
+            const QString name = fi.fileName().isEmpty() ? fi.absoluteFilePath() : fi.fileName();
+            workspaces.push_back({name, homeDir});
+            if (m_store) m_store->upsertWorkspace(homeDir, name);
+        }
+    }
+    m_workspaceModel->setWorkspaces(workspaces);
 
     // select first workspace
     if (m_workspaceModel->rowCount() > 0) {
@@ -99,15 +111,7 @@ void MainWindow::buildUi() {
         const QString dir = QFileDialog::getExistingDirectory(this, "Choose workspace directory");
         if (dir.isEmpty()) return;
 
-        const QFileInfo fi(dir);
-        const QString name = fi.fileName().isEmpty() ? fi.absoluteFilePath() : fi.fileName();
-
-        m_workspaceModel->addWorkspace({name, dir});
-
-        const int row = m_workspaceModel->indexOfDir(dir);
-        if (row >= 0) {
-            m_workspaceView->setCurrentIndex(m_workspaceModel->index(row, 0));
-        }
+        addWorkspaceAndSelect(dir);
     });
 
     connect(removeBtn, &QToolButton::clicked, this, [this]{
@@ -115,7 +119,10 @@ void MainWindow::buildUi() {
         if (!cur.isValid()) return;
 
         const int row = cur.row();
+        const QString dir = m_workspaceModel->data(m_workspaceModel->index(row, 0),
+                                                   WorkspaceListModel::DirRole).toString();
         m_workspaceModel->removeAt(row);
+        if (m_store && !dir.isEmpty()) m_store->removeWorkspace(dir);
 
         // pick next workspace to show
         const int count = m_workspaceModel->rowCount();
@@ -168,11 +175,7 @@ void MainWindow::buildUi() {
     connect(addWs, &QAction::triggered, this, [this]{
         const QString dir = QFileDialog::getExistingDirectory(this, "Choose workspace directory");
         if (dir.isEmpty()) return;
-        QVector<Workspace> ws;
-        // append to existing
-        for (int i=0; i<m_workspaceModel->rowCount(); ++i) ws.push_back(m_workspaceModel->workspaceAt(i));
-        ws.push_back({QFileInfo(dir).fileName().isEmpty() ? dir : QFileInfo(dir).fileName(), dir});
-        m_workspaceModel->setWorkspaces(ws);
+        addWorkspaceAndSelect(dir);
     });
 }
 
@@ -242,9 +245,7 @@ QWidget* MainWindow::buildMainTab() {
         if (isDir) {
             // Add workspace if missing
             if (!m_workspaceModel->containsDir(path)) {
-                const QFileInfo fi(path);
-                const QString name = fi.fileName().isEmpty() ? fi.absoluteFilePath() : fi.fileName();
-                m_workspaceModel->addWorkspace({name, path});
+                addWorkspaceAndSelect(path);
             }
 
             // Select it (this triggers setWorkspaceDirectory via your selection handler)
@@ -281,6 +282,18 @@ QWidget* MainWindow::buildMainTab() {
     return w;
 }
 
+void MainWindow::addWorkspaceAndSelect(const QString& dir) {
+    if (dir.isEmpty()) return;
+    const QFileInfo fi(dir);
+    const QString name = fi.fileName().isEmpty() ? fi.absoluteFilePath() : fi.fileName();
+    m_workspaceModel->addWorkspace({name, dir});
+    if (m_store) m_store->upsertWorkspace(dir, name);
+    const int row = m_workspaceModel->indexOfDir(dir);
+    if (row >= 0) {
+        m_workspaceView->setCurrentIndex(m_workspaceModel->index(row, 0));
+    }
+}
+
 void MainWindow::setWorkspaceDirectory(const QString& dir) {
     if (dir.isEmpty()) return;
     m_tabs->setTabText(m_mainTabIndex, QString("Main (%1)").arg(QFileInfo(dir).fileName()));
@@ -288,4 +301,3 @@ void MainWindow::setWorkspaceDirectory(const QString& dir) {
     m_thumbModel->setDirectory(dir);
     m_paged->setCurrentPage(1);
 }
-
