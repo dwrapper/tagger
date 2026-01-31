@@ -164,6 +164,14 @@ void MainWindow::buildUi() {
     m_tabs->setTabsClosable(true);
     m_tabs->setMovable(true);
 
+    connect(m_tabs, &QTabWidget::currentChanged, this, [this](int idx) {
+        QWidget* current = m_tabs->widget(idx);
+        if (!current) return;
+        if (!current->property("filePath").toString().isEmpty()) {
+            current->setFocus(Qt::TabFocusReason);
+        }
+    });
+
     connect(m_tabs, &QTabWidget::tabCloseRequested, this, [this](int idx) {
         if (idx == m_mainTabIndex) return; // main tab can't die
         QWidget* w = m_tabs->widget(idx);

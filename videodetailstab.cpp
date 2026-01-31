@@ -36,6 +36,7 @@ static QString humanSize(qint64 bytes) {
 
 VideoDetailsTab::VideoDetailsTab(const FileItem& item, TaggerStore* store, FileHasher* hasher, QWidget* parent)
     : QWidget(parent), m_store(store), m_hasher(hasher), m_item(item) {
+    setFocusPolicy(Qt::StrongFocus);
 
     auto* root = new QVBoxLayout(this);
     root->setContentsMargins(8,8,8,8);
