@@ -1,0 +1,23 @@
+app-id: org.tagger.Tagger
+runtime: org.kde.Platform
+runtime-version: "6.7"
+sdk: org.kde.Sdk
+command: tagger
+finish-args:
+  - --share=ipc
+  - --socket=x11
+  - --device=dri
+  - --filesystem=home
+modules:
+  - name: tagger
+    buildsystem: simple
+    build-commands:
+      - qmake CONFIG+=release Tagger.pro
+      - make -j"${FLATPAK_BUILDER_N_JOBS:-1}"
+      - install -Dm755 tagger /app/bin/tagger
+      - install -Dm644 packaging/flatpak/org.tagger.Tagger.desktop /app/share/applications/org.tagger.Tagger.desktop
+      - install -Dm644 packaging/flatpak/org.tagger.Tagger.metainfo.xml /app/share/metainfo/org.tagger.Tagger.metainfo.xml
+      - install -Dm644 packaging/flatpak/org.tagger.Tagger.svg /app/share/icons/hicolor/scalable/apps/org.tagger.Tagger.svg
+    sources:
+      - type: dir
+        path: ../..
