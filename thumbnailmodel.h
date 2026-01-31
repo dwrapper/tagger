@@ -21,7 +21,7 @@ public:
         TagsRole,
         IconRole,
         ThumbStatusRole,
-        IsDirRole
+        FileKindRole
     };
 
     explicit ThumbnailModel(QObject* parent = nullptr);

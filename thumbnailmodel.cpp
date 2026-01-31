@@ -116,7 +116,7 @@ QVariant ThumbnailModel::data(const QModelIndex& index, int role) const {
     case CreatedRole: return it.created;
     case SizeRole: return it.sizeBytes;
     case TagsRole: return it.tags;
-    case IsDirRole: return it.isDir;
+    case FileKindRole: return static_cast<int>(it.kind);
     default: return {};
     }
 }
@@ -131,7 +131,7 @@ QHash<int, QByteArray> ThumbnailModel::roleNames() const {
         {SizeRole, "sizeBytes"},
         {TagsRole, "tags"},
         {IconRole, "icon"},
-        {IsDirRole, "isDir"},
+        {FileKindRole, "fileKind"},
     };
 }
 
@@ -173,17 +173,17 @@ void ThumbnailModel::loadDirectory(const QString& dirPath) {
         FileItem item;
         item.absolutePath = fi.absoluteFilePath();
         item.fileName = fi.fileName();
-        item.isDir = fi.isDir();
+        item.kind = classifyFileKind(fi);
 
         item.modified = fi.lastModified();
         item.created = bestEffortCreatedTime(fi);
-        item.sizeBytes = item.isDir ? 0 : fi.size();
+        item.sizeBytes = item.kind == FileKind::Directory ? 0 : fi.size();
 
         // Icon always
         item.icon = iconProvider.icon(fi);
 
         // Thumbnails only for files (folders shouldn’t have “.ts thumbnails”)
-        if (item.isDir) {
+        if (item.kind == FileKind::Directory) {
             item.thumbStatus = ThumbStatus::Unavailable; // no spinner
         } else {
             item.thumbStatus = ThumbStatus::Loading;     // your async pipeline will resolve it
@@ -209,7 +209,9 @@ void ThumbnailModel::loadDirectory(const QString& dirPath) {
     }
 
     std::sort(m_items.begin(), m_items.end(), [](const FileItem& a, const FileItem& b) {
-        if (a.isDir != b.isDir) return a.isDir > b.isDir; // dirs first
+        const bool aDir = a.kind == FileKind::Directory;
+        const bool bDir = b.kind == FileKind::Directory;
+        if (aDir != bDir) return aDir > bDir; // dirs first
         if (a.modified != b.modified) return a.modified > b.modified;
         if (a.created  != b.created)  return a.created  > b.created;
         if (a.sizeBytes != b.sizeBytes) return a.sizeBytes > b.sizeBytes;
@@ -224,7 +226,7 @@ void ThumbnailModel::loadDirectory(const QString& dirPath) {
 
     // Start async requests AFTER reset to avoid chaos
     for (const auto& item : m_items) {
-        if (item.isDir) continue;
+        if (item.kind == FileKind::Directory) continue;
         const QString tsThumbPath = tsDir.absoluteFilePath(item.fileName + ".jpg");
         m_thumbs->request(item.absolutePath, tsThumbPath, m_token);
     }
@@ -238,4 +240,3 @@ const FileItem& ThumbnailModel::itemAt(int row) const {
     if (row < 0 || row >= m_items.size()) return dummy;
     return m_items[row];
 }
-

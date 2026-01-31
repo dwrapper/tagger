@@ -10,7 +10,6 @@
 #include <QAction>
 #include <QFileDialog>
 #include <QItemSelectionModel>
-#include <QImageReader>
 #include <QToolButton>
 #include <QStandardPaths>
 #include <QDir>
@@ -25,14 +24,9 @@
 #include "paginationbar.h"
 #include "thumbnaildelegate.h"
 #include "filedetailstab.h"
+#include "fileitem.h"
 #include "picturedetailstab.h"
 #include "videodetailstab.h"
-
-static bool isVideoExt(const QString& path) {
-    const QString ext = QFileInfo(path).suffix().toLower();
-    static const QSet<QString> vids = {"mp4","webm","mov","m4v","mkv","avi","flv","wmv","mpg","mpeg","3gp"};
-    return vids.contains(ext);
-}
 
 static QDateTime bestEffortCreatedTime(const QFileInfo& fi) {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
@@ -258,10 +252,11 @@ QWidget* MainWindow::buildMainTab() {
         const QModelIndex filterIdx = m_paged->mapToSource(proxyIdx);
         const QModelIndex srcIdx = m_filter->mapToSource(filterIdx);
 
-        const bool isDir = m_thumbModel->data(srcIdx, ThumbnailModel::IsDirRole).toBool();
+        const auto kindValue = m_thumbModel->data(srcIdx, ThumbnailModel::FileKindRole).toInt();
+        const auto kind = static_cast<FileKind>(kindValue);
         const QString path = m_thumbModel->data(srcIdx, ThumbnailModel::AbsolutePathRole).toString();
 
-        if (isDir) {
+        if (kind == FileKind::Directory) {
             // Add workspace if missing
             if (!m_workspaceModel->containsDir(path)) {
                 addWorkspaceAndSelect(path);
@@ -288,7 +283,7 @@ QWidget* MainWindow::buildMainTab() {
 }
 
 bool MainWindow::openFileTab(const FileItem& item, bool setCurrent, bool persist) {
-    if (item.absolutePath.isEmpty() || item.isDir) return false;
+    if (item.absolutePath.isEmpty() || item.kind == FileKind::Directory) return false;
 
     for (int i = 0; i < m_tabs->count(); ++i) {
         QWidget* existing = m_tabs->widget(i);
@@ -300,13 +295,18 @@ bool MainWindow::openFileTab(const FileItem& item, bool setCurrent, bool persist
     }
 
     QWidget* tab = nullptr;
-    QImageReader r(item.absolutePath);
-    if (r.canRead()) {
+    switch (item.kind) {
+    case FileKind::Picture:
         tab = new PictureDetailsTab(item, m_store, m_hasher, m_tabs);
-    } else if (isVideoExt(item.absolutePath)) {
+        break;
+    case FileKind::Video:
         tab = new VideoDetailsTab(item, m_store, m_hasher, m_tabs);
-    } else {
+        break;
+    case FileKind::Directory:
+    case FileKind::GenericFile:
+    default:
         tab = new FileDetailsTab(item, m_store, m_hasher, m_tabs);
+        break;
     }
 
     tab->setProperty("filePath", item.absolutePath);
@@ -318,12 +318,13 @@ bool MainWindow::openFileTab(const FileItem& item, bool setCurrent, bool persist
 
 bool MainWindow::openFileTab(const QString& path, bool setCurrent, bool persist) {
     const QFileInfo fi(path);
-    if (!fi.exists() || fi.isDir()) return false;
+    if (!fi.exists()) return false;
 
     FileItem item;
     item.absolutePath = fi.absoluteFilePath();
     item.fileName = fi.fileName();
-    item.isDir = false;
+    item.kind = classifyFileKind(fi);
+    if (item.kind == FileKind::Directory) return false;
     item.modified = fi.lastModified();
     item.created = bestEffortCreatedTime(fi);
     item.sizeBytes = fi.size();
