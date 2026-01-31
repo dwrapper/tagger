@@ -22,6 +22,7 @@ static QString humanSize(qint64 bytes) {
 
 FileDetailsTab::FileDetailsTab(const FileItem& item, TaggerStore* store, FileHasher* hasher, QWidget* parent)
     : QWidget(parent), m_store(store), m_hasher(hasher), m_item(item) {
+    setFocusPolicy(Qt::StrongFocus);
 
     auto* root = new QVBoxLayout(this);
 
