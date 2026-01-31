@@ -9,6 +9,10 @@ AppDir:
     version: "@VERSION@"
     exec: usr/bin/Tagger
   apt:
+    arch: "@APT_ARCH@"
+    sources:
+      - sourceline: "deb [arch=@APT_ARCH@] http://archive.ubuntu.com/ubuntu/ jammy main universe"
+        key_url: "https://archive.ubuntu.com/ubuntu/project/ubuntu-archive-keyring.gpg"
     include:
       - "@LIBMPV_PKG@"
   files:
