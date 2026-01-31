@@ -16,6 +16,7 @@ public:
 signals:
     void navigateRequested(int direction);
 
+private:
     TaggerStore* m_store = nullptr;
     FileHasher* m_hasher = nullptr;
     FileItem m_item;
