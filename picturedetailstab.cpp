@@ -11,6 +11,7 @@
 #include <QTextEdit>
 #include <QFileInfo>
 #include <QTimer>
+#include <QShortcut>
 
 static QString humanSize(qint64 bytes) {
     const double b = double(bytes);
@@ -28,8 +29,23 @@ PictureDetailsTab::PictureDetailsTab(const FileItem& item, TaggerStore* store, F
     root->setContentsMargins(8,8,8,8);
     root->setSpacing(6);
 
-    // Top bar: right-aligned "i" button
+    // Top bar: navigation + right-aligned "i" button
     auto* topBar = new QHBoxLayout();
+
+    auto* prevBtn = new QToolButton(this);
+    prevBtn->setText("▲");
+    prevBtn->setToolTip("Previous file (Up)");
+    prevBtn->setAutoRaise(true);
+    prevBtn->setFixedSize(24, 24);
+
+    auto* nextBtn = new QToolButton(this);
+    nextBtn->setText("▼");
+    nextBtn->setToolTip("Next file (Down)");
+    nextBtn->setAutoRaise(true);
+    nextBtn->setFixedSize(24, 24);
+
+    topBar->addWidget(prevBtn);
+    topBar->addWidget(nextBtn);
     topBar->addStretch(1);
 
     m_infoBtn = new QToolButton(this);
@@ -62,6 +78,25 @@ PictureDetailsTab::PictureDetailsTab(const FileItem& item, TaggerStore* store, F
 
     connect(m_infoBtn, &QToolButton::clicked, this, [this] {
         setModeImage(!m_imageMode);
+    });
+
+    connect(prevBtn, &QToolButton::clicked, this, [this] {
+        emit navigateRequested(-1);
+    });
+    connect(nextBtn, &QToolButton::clicked, this, [this] {
+        emit navigateRequested(1);
+    });
+
+    auto* prevShortcut = new QShortcut(QKeySequence(Qt::Key_Up), this);
+    prevShortcut->setContext(Qt::WidgetWithChildrenShortcut);
+    connect(prevShortcut, &QShortcut::activated, this, [this] {
+        emit navigateRequested(-1);
+    });
+
+    auto* nextShortcut = new QShortcut(QKeySequence(Qt::Key_Down), this);
+    nextShortcut->setContext(Qt::WidgetWithChildrenShortcut);
+    connect(nextShortcut, &QShortcut::activated, this, [this] {
+        emit navigateRequested(1);
     });
 
     setModeImage(true);
@@ -165,4 +200,3 @@ QWidget* PictureDetailsTab::buildInfoPane(const FileItem& item, const QSize& img
 
     return w;
 }
-

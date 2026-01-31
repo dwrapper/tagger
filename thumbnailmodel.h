@@ -32,6 +32,7 @@ public:
 
     void setDirectory(const QString& dirPath);
     const FileItem& itemAt(int row) const;
+    const FileItem* neighborFile(const QString& currentPath, int direction) const;
 
     void setStore(TaggerStore* store) { m_store = store; }
 

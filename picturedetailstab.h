@@ -16,6 +16,9 @@ class PictureDetailsTab : public QWidget {
 public:
     PictureDetailsTab(const FileItem& item, TaggerStore* store, FileHasher* hasher, QWidget* parent=nullptr);
 
+signals:
+    void navigateRequested(int direction);
+
 private:
     QWidget* buildInfoPane(const FileItem& item, const QSize& imgSizePx);
     void setModeImage(bool imageMode);

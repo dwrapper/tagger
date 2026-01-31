@@ -240,3 +240,16 @@ const FileItem& ThumbnailModel::itemAt(int row) const {
     if (row < 0 || row >= m_items.size()) return dummy;
     return m_items[row];
 }
+
+const FileItem* ThumbnailModel::neighborFile(const QString& currentPath, int direction) const {
+    if (currentPath.isEmpty() || m_items.isEmpty()) return nullptr;
+    const int row = m_rowByPath.value(currentPath, -1);
+    if (row < 0) return nullptr;
+
+    const int step = direction >= 0 ? 1 : -1;
+    for (int i = row + step; i >= 0 && i < m_items.size(); i += step) {
+        if (m_items[i].kind == FileKind::Directory) continue;
+        return &m_items[i];
+    }
+    return nullptr;
+}

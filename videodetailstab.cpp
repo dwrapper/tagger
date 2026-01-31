@@ -14,6 +14,7 @@
 #include <QLabel>
 #include <QSignalBlocker>
 #include <QTimer>
+#include <QShortcut>
 
 static QString fmtTime(double seconds) {
     if (seconds <= 0 || std::isnan(seconds) || std::isinf(seconds)) return "00:00";
@@ -41,6 +42,21 @@ VideoDetailsTab::VideoDetailsTab(const FileItem& item, TaggerStore* store, FileH
     root->setSpacing(6);
 
     auto* topBar = new QHBoxLayout();
+
+    auto* prevBtn = new QToolButton(this);
+    prevBtn->setText("▲");
+    prevBtn->setToolTip("Previous file (Up)");
+    prevBtn->setAutoRaise(true);
+    prevBtn->setFixedSize(24, 24);
+
+    auto* nextBtn = new QToolButton(this);
+    nextBtn->setText("▼");
+    nextBtn->setToolTip("Next file (Down)");
+    nextBtn->setAutoRaise(true);
+    nextBtn->setFixedSize(24, 24);
+
+    topBar->addWidget(prevBtn);
+    topBar->addWidget(nextBtn);
     topBar->addStretch(1);
 
     m_infoBtn = new QToolButton(this);
@@ -140,6 +156,25 @@ VideoDetailsTab::VideoDetailsTab(const FileItem& item, TaggerStore* store, FileH
 
     connect(m_infoBtn, &QToolButton::clicked, this, [this] {
         setModePlayer(!m_playerMode);
+    });
+
+    connect(prevBtn, &QToolButton::clicked, this, [this] {
+        emit navigateRequested(-1);
+    });
+    connect(nextBtn, &QToolButton::clicked, this, [this] {
+        emit navigateRequested(1);
+    });
+
+    auto* prevShortcut = new QShortcut(QKeySequence(Qt::Key_Up), this);
+    prevShortcut->setContext(Qt::WidgetWithChildrenShortcut);
+    connect(prevShortcut, &QShortcut::activated, this, [this] {
+        emit navigateRequested(-1);
+    });
+
+    auto* nextShortcut = new QShortcut(QKeySequence(Qt::Key_Down), this);
+    nextShortcut->setContext(Qt::WidgetWithChildrenShortcut);
+    connect(nextShortcut, &QShortcut::activated, this, [this] {
+        emit navigateRequested(1);
     });
 
     connect(m_player, &MpvOpenGLWidget::pausedChanged, this, [playPauseBtn](bool paused){
@@ -291,4 +326,3 @@ QWidget* VideoDetailsTab::buildInfoPane(const FileItem& item) {
 
     return w;
 }
-

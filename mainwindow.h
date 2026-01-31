@@ -27,6 +27,8 @@ private:
     void setWorkspaceDirectory(const QString& dir);
     void addWorkspaceAndSelect(const QString& dir);
     void restoreOpenTabs();
+    QWidget* createDetailsTab(const FileItem& item);
+    bool navigateDetailsTab(QWidget* tab, int direction);
     bool openFileTab(const FileItem& item, bool setCurrent = true, bool persist = true);
     bool openFileTab(const QString& path, bool setCurrent = true, bool persist = true);
 
