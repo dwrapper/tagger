@@ -32,7 +32,7 @@ qmake CONFIG+=release "${ROOT_DIR}/Tagger.pro"
 make -j"${JOBS}"
 popd >/dev/null
 
-install -Dm755 "${BUILD_DIR}/tagger" "${APPDIR}/usr/bin/tagger"
+install -Dm755 "${BUILD_DIR}/Tagger" "${APPDIR}/usr/bin/Tagger"
 install -Dm644 "${ROOT_DIR}/packaging/flatpak/org.tagger.Tagger.desktop" "${DESKTOP_FILE}"
 install -Dm644 "${ROOT_DIR}/packaging/flatpak/org.tagger.Tagger.svg" "${ICON_FILE}"
 install -Dm644 "${ROOT_DIR}/packaging/flatpak/org.tagger.Tagger.metainfo.xml" "${METAINFO_FILE}"
