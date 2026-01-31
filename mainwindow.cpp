@@ -14,6 +14,9 @@
 #include <QToolButton>
 #include <QStandardPaths>
 #include <QDir>
+#include <QFileIconProvider>
+#include <QDateTime>
+#include <optional>
 
 #include "workspacelistmodel.h"
 #include "thumbnailmodel.h"
@@ -29,6 +32,16 @@ static bool isVideoExt(const QString& path) {
     const QString ext = QFileInfo(path).suffix().toLower();
     static const QSet<QString> vids = {"mp4","webm","mov","m4v","mkv","avi","flv","wmv","mpg","mpeg","3gp"};
     return vids.contains(ext);
+}
+
+static QDateTime bestEffortCreatedTime(const QFileInfo& fi) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    QDateTime bt = fi.birthTime();
+    if (bt.isValid()) return bt;
+#endif
+    QDateTime ct = fi.metadataChangeTime();
+    if (ct.isValid()) return ct;
+    return fi.lastModified();
 }
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
@@ -69,6 +82,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         m_workspaceView->setCurrentIndex(m_workspaceModel->index(0,0));
         setWorkspaceDirectory(m_workspaceModel->data(m_workspaceModel->index(0,0), WorkspaceListModel::DirRole).toString());
     }
+
+    restoreOpenTabs();
 }
 
 void MainWindow::buildUi() {
@@ -155,6 +170,10 @@ void MainWindow::buildUi() {
     connect(m_tabs, &QTabWidget::tabCloseRequested, this, [this](int idx) {
         if (idx == m_mainTabIndex) return; // main tab can't die
         QWidget* w = m_tabs->widget(idx);
+        if (m_store) {
+            const QString path = w->property("filePath").toString();
+            if (!path.isEmpty()) m_store->removeOpenTab(path);
+        }
         m_tabs->removeTab(idx);
         w->deleteLater();
     });
@@ -258,21 +277,7 @@ QWidget* MainWindow::buildMainTab() {
 
         const FileItem& item = m_thumbModel->itemAt(srcIdx.row());
 
-        // Open file tab
-        QImageReader r(item.absolutePath);
-        if (r.canRead()) {
-            auto* tab = new PictureDetailsTab(item, m_store, m_hasher, m_tabs);
-            const int idx = m_tabs->addTab(tab, item.fileName);
-            m_tabs->setCurrentIndex(idx);
-        } else if (isVideoExt(item.absolutePath)) {
-            auto* tab = new VideoDetailsTab(item, m_store, m_hasher, m_tabs);
-            const int idx = m_tabs->addTab(tab, item.fileName);
-            m_tabs->setCurrentIndex(idx);
-        } else {
-            auto* tab = new FileDetailsTab(item, m_store, m_hasher, m_tabs);
-            const int idx = m_tabs->addTab(tab, item.fileName);
-            m_tabs->setCurrentIndex(idx);
-        }
+        openFileTab(item);
 
     });
 
@@ -280,6 +285,69 @@ QWidget* MainWindow::buildMainTab() {
     m_pager->setPageInfo(1, 1);
 
     return w;
+}
+
+bool MainWindow::openFileTab(const FileItem& item, bool setCurrent, bool persist) {
+    if (item.absolutePath.isEmpty() || item.isDir) return false;
+
+    for (int i = 0; i < m_tabs->count(); ++i) {
+        QWidget* existing = m_tabs->widget(i);
+        if (existing->property("filePath").toString() == item.absolutePath) {
+            if (setCurrent) m_tabs->setCurrentIndex(i);
+            if (persist && m_store) m_store->addOpenTab(item.absolutePath);
+            return true;
+        }
+    }
+
+    QWidget* tab = nullptr;
+    QImageReader r(item.absolutePath);
+    if (r.canRead()) {
+        tab = new PictureDetailsTab(item, m_store, m_hasher, m_tabs);
+    } else if (isVideoExt(item.absolutePath)) {
+        tab = new VideoDetailsTab(item, m_store, m_hasher, m_tabs);
+    } else {
+        tab = new FileDetailsTab(item, m_store, m_hasher, m_tabs);
+    }
+
+    tab->setProperty("filePath", item.absolutePath);
+    const int idx = m_tabs->addTab(tab, item.fileName);
+    if (setCurrent) m_tabs->setCurrentIndex(idx);
+    if (persist && m_store) m_store->addOpenTab(item.absolutePath);
+    return true;
+}
+
+bool MainWindow::openFileTab(const QString& path, bool setCurrent, bool persist) {
+    const QFileInfo fi(path);
+    if (!fi.exists() || fi.isDir()) return false;
+
+    FileItem item;
+    item.absolutePath = fi.absoluteFilePath();
+    item.fileName = fi.fileName();
+    item.isDir = false;
+    item.modified = fi.lastModified();
+    item.created = bestEffortCreatedTime(fi);
+    item.sizeBytes = fi.size();
+
+    QFileIconProvider iconProvider;
+    item.icon = iconProvider.icon(fi);
+
+    if (m_store) {
+        if (auto tags = m_store->getTagsByPath(item.absolutePath)) {
+            item.tags = *tags;
+        }
+    }
+
+    return openFileTab(item, setCurrent, persist);
+}
+
+void MainWindow::restoreOpenTabs() {
+    if (!m_store) return;
+    const QStringList tabs = m_store->loadOpenTabs();
+    for (const auto& path : tabs) {
+        if (!openFileTab(path, false, false)) {
+            m_store->removeOpenTab(path);
+        }
+    }
 }
 
 void MainWindow::addWorkspaceAndSelect(const QString& dir) {

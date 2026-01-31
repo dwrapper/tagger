@@ -15,6 +15,7 @@ class FilterProxy;
 class PagedProxy;
 class PaginationBar;
 class WorkspaceListModel;
+struct FileItem;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -25,6 +26,9 @@ private:
     void buildUi();
     void setWorkspaceDirectory(const QString& dir);
     void addWorkspaceAndSelect(const QString& dir);
+    void restoreOpenTabs();
+    bool openFileTab(const FileItem& item, bool setCurrent = true, bool persist = true);
+    bool openFileTab(const QString& path, bool setCurrent = true, bool persist = true);
 
     QWidget* buildMainTab();
 
