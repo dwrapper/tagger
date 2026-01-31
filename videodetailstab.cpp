@@ -146,6 +146,26 @@ VideoDetailsTab::VideoDetailsTab(const FileItem& item, TaggerStore* store, FileH
         playPauseBtn->setText(m_player->isPaused() ? "Play" : "Pause");
     });
 
+    auto* spaceShortcut = new QShortcut(QKeySequence(Qt::WhiteSpaceNormal), this);
+    spaceShortcut->setContext(Qt::WidgetWithChildrenShortcut);
+    connect(spaceShortcut, &QShortcut::activated, this, [this, playPauseBtn] {
+        if (!m_player) return;
+        m_player->togglePause();
+        playPauseBtn->setText(m_player->isPaused() ? "Play" : "Pause");
+    });
+
+    auto* leftShortcut = new QShortcut(QKeySequence(Qt::LeftArrow), this);
+    spaceShortcut->setContext(Qt::WidgetWithChildrenShortcut);
+    connect(leftShortcut, &QShortcut::activated, this, [this] {
+        if (m_player) m_player->seekSeconds(-5);
+    });
+
+    auto* rightShortcut = new QShortcut(QKeySequence(Qt::RightArrow), this);
+    spaceShortcut->setContext(Qt::WidgetWithChildrenShortcut);
+    connect(rightShortcut, &QShortcut::activated, this, [this] {
+        if (m_player) m_player->seekSeconds(5);
+    });
+
     // Set initial label (paused)
     playPauseBtn->setText("Play");
 
