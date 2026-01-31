@@ -11,9 +11,12 @@ AppDir:
   pacman:
     architecture: "@ARCH@"
     repositories:
-      - core
-      - extra
-      - community
+      core:
+        mirrorlist: /etc/pacman.d/mirrorlist
+      extra:
+        mirrorlist: /etc/pacman.d/mirrorlist
+      community:
+        mirrorlist: /etc/pacman.d/mirrorlist
     include:
       - "@LIBMPV_PKG@"
   files:
