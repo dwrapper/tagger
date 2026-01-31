@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Tagger
+Comment=File tagger and viewer
+Exec=tagger
+Icon=org.tagger.Tagger
+Categories=Utility;Graphics;
+Terminal=false

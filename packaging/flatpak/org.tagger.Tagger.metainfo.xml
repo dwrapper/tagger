@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop">
+  <id>org.tagger.Tagger</id>
+  <name>Tagger</name>
+  <summary>File tagger and viewer</summary>
+  <description>
+    <p>Tagger is a Qt application for tagging and viewing files.</p>
+  </description>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+</component>
