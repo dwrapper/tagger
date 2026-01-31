@@ -1,0 +1,20 @@
+version: 1
+
+AppDir:
+  path: AppDir
+  app_info:
+    id: org.tagger.Tagger
+    name: Tagger
+    icon: org.tagger.Tagger
+    version: "@VERSION@"
+    exec: usr/bin/Tagger
+  files:
+    include:
+      - usr/bin/Tagger
+      - usr/share/applications/org.tagger.Tagger.desktop
+      - usr/share/icons/hicolor/scalable/apps/org.tagger.Tagger.svg
+      - usr/share/metainfo/org.tagger.Tagger.metainfo.xml
+
+AppImage:
+  arch: "@ARCH@"
+  file_name: "@OUTPUT_NAME@"
