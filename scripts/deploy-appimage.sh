@@ -15,6 +15,20 @@ RECIPE_PATH="${BUILD_ROOT}/appimage-builder.yml"
 VERSION="${VERSION:-$(git -C "${ROOT_DIR}" describe --tags --always --dirty 2>/dev/null || echo 0.0.0)}"
 JOBS="${JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)}"
 LIBMPV_PKG="${LIBMPV_PKG:-libmpv1}"
+ARCH="$(uname -m)"
+APT_ARCH="${ARCH}"
+
+case "${ARCH}" in
+  x86_64)
+    APT_ARCH="amd64"
+    ;;
+  aarch64)
+    APT_ARCH="arm64"
+    ;;
+  armv7l)
+    APT_ARCH="armhf"
+    ;;
+esac
 
 require_command() {
   local cmd="$1"
@@ -44,6 +58,7 @@ install -Dm644 "${ROOT_DIR}/packaging/flatpak/org.tagger.Tagger.metainfo.xml" "$
 sed \
   -e "s|@VERSION@|${VERSION}|g" \
   -e "s|@ARCH@|$(uname -m)|g" \
+  -e "s|@APT_ARCH@|${APT_ARCH}|g" \
   -e "s|@OUTPUT_NAME@|${OUTPUT_NAME}|g" \
   -e "s|@LIBMPV_PKG@|${LIBMPV_PKG}|g" \
   "${RECIPE_TEMPLATE}" > "${RECIPE_PATH}"
