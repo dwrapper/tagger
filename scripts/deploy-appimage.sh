@@ -10,11 +10,9 @@ ICON_FILE="${APPDIR}/usr/share/icons/hicolor/scalable/apps/org.tagger.Tagger.svg
 METAINFO_FILE="${APPDIR}/usr/share/metainfo/org.tagger.Tagger.metainfo.xml"
 OUTPUT_NAME="Tagger-$(uname -m).AppImage"
 OUTPUT_PATH="${BUILD_ROOT}/${OUTPUT_NAME}"
-RECIPE_TEMPLATE="${ROOT_DIR}/packaging/appimage-builder.yml"
 RECIPE_PATH="${BUILD_ROOT}/appimage-builder.yml"
 VERSION="${VERSION:-$(git -C "${ROOT_DIR}" describe --tags --always --dirty 2>/dev/null || echo 0.0.0)}"
 JOBS="${JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)}"
-LIBMPV_PKG="${LIBMPV_PKG:-libmpv1}"
 ARCH="$(uname -m)"
 APT_ARCH="${ARCH}"
 
@@ -41,6 +39,19 @@ require_command() {
 require_command qmake
 require_command make
 require_command appimage-builder
+
+if command -v apt-get >/dev/null 2>&1; then
+  RECIPE_TEMPLATE="${ROOT_DIR}/packaging/appimage-builder.yml"
+  LIBMPV_PKG_DEFAULT="libmpv1"
+elif command -v pacman >/dev/null 2>&1; then
+  RECIPE_TEMPLATE="${ROOT_DIR}/packaging/appimage-builder-pacman.yml"
+  LIBMPV_PKG_DEFAULT="mpv"
+else
+  echo "Either apt-get or pacman is required to install AppImage dependencies." >&2
+  exit 1
+fi
+
+LIBMPV_PKG="${LIBMPV_PKG:-${LIBMPV_PKG_DEFAULT}}"
 
 rm -rf "${BUILD_ROOT}"
 mkdir -p "${BUILD_DIR}" "${APPDIR}"
