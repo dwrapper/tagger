@@ -8,6 +8,9 @@ AppDir:
     icon: org.tagger.Tagger
     version: "@VERSION@"
     exec: usr/bin/Tagger
+  apt:
+    include:
+      - "@LIBMPV_PKG@"
   files:
     include:
       - usr/bin/Tagger

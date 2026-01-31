@@ -14,6 +14,7 @@ RECIPE_TEMPLATE="${ROOT_DIR}/packaging/appimage-builder.yml"
 RECIPE_PATH="${BUILD_ROOT}/appimage-builder.yml"
 VERSION="${VERSION:-$(git -C "${ROOT_DIR}" describe --tags --always --dirty 2>/dev/null || echo 0.0.0)}"
 JOBS="${JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)}"
+LIBMPV_PKG="${LIBMPV_PKG:-libmpv1}"
 
 require_command() {
   local cmd="$1"
@@ -44,6 +45,7 @@ sed \
   -e "s|@VERSION@|${VERSION}|g" \
   -e "s|@ARCH@|$(uname -m)|g" \
   -e "s|@OUTPUT_NAME@|${OUTPUT_NAME}|g" \
+  -e "s|@LIBMPV_PKG@|${LIBMPV_PKG}|g" \
   "${RECIPE_TEMPLATE}" > "${RECIPE_PATH}"
 
 pushd "${BUILD_ROOT}" >/dev/null
